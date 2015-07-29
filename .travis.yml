@@ -7,4 +7,4 @@ python:
 install: "pip install ."
 
 # command to run tests
-script: unit_test.py
+script: "nosetests unit_test.py"
