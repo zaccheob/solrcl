@@ -16,7 +16,7 @@ from base import SOLRNetworkError, SOLRResponseError, SOLRResponseFormatError, S
 from core import MissingRequiredField, DocumentNotFound, SOLRReplicationError, SOLRCore
 from admin import SOLRAdmin
 from create import initCore, freeCore, initSlaveSolrCore, SOLRInitError, ExecuteCommandsError
-from log import baseLogFormatter, extendedLogFormatter, httpLogFilter
+from log import BaseLogFormatter, ExtendedLogFormatter, HttpLogFilter
 from solrtype import SOLRType, NotImplementedSOLRTypeWarning, solr2datetime, datetime2solr
 from solrfield import SOLRField
 from base import DEFAULT_SOLR_DOMAIN, DEFAULT_SOLR_PORT

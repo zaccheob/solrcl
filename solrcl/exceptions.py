@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+"""Global package exceptions"""
 
-#Global exceptions
-class SOLRError(Exception): pass
+class SOLRError(Exception):
+    """Generic exception from which all package errors inherits"""
