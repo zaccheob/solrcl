@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+import os
 import logging
 import pipes
 import subprocess
@@ -48,13 +49,18 @@ def _executeCommands(commands, ssh_user=None, domain=DEFAULT_SOLR_DOMAIN):
 		shcommand = ' '.join(command)
 		logger.debug(shcommand)
 
+		try:
+			cwd = os.getcwd()
+		except OSError:
+			cwd = "/tmp"
+
 		#if domain != localhost requires ssh access
 		if domain == 'localhost' or domain == socket.gethostname() or domain == socket.gethostbyname(socket.gethostname()) or domain == socket.getfqdn():
 			#Local
-			p = subprocess.Popen(shcommand, shell=True)
+			p = subprocess.Popen(shcommand, shell=True, cwd=cwd)
 		else:
 			#Remote
-			p = subprocess.Popen(('ssh', '{0}@{1}'.format(ssh_user, domain), shcommand), shell=False)
+			p = subprocess.Popen(('ssh', '{0}@{1}'.format(ssh_user, domain), shcommand), shell=False, cwd=cwd)
 
 		rc = p.wait()
 		if rc != 0:
