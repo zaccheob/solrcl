@@ -4,7 +4,7 @@
 import warnings
 import datetime
 import unittest
-import solrlib
+import solrcl
 
 import logging
 
@@ -71,9 +71,9 @@ TEST_SCHEMA = """<?xml version="1.0" ?>
 
 def initTestCore():
 	try:
-		solrlib.SOLRCore('test_solrlib')
+		solrcl.SOLRCore('test_solrcl')
 	except:
-		solrlib.initCore('test_solrlib', '/scsi2/solr/test_solrlib', TEST_SOLRCONFIG, TEST_SCHEMA)
+		solrcl.initCore('test_solrcl', '/scsi2/solr/test_solrcl', TEST_SOLRCONFIG, TEST_SCHEMA)
 
 
 class TestSolrlibBase(unittest.TestCase):
@@ -81,15 +81,15 @@ class TestSolrlibBase(unittest.TestCase):
 		initTestCore()
 
 	def tearDown(self):
-		solrlib.freeCore('test_solrlib')
+		solrcl.freeCore('test_solrcl')
 
 
 class TestSolrlibReadConfig(TestSolrlibBase):
 	def setUp(self):
 		super(TestSolrlibReadConfig, self).setUp()
-		self.solr = solrlib.SOLRCore('test_solrlib')
+		self.solr = solrcl.SOLRCore('test_solrcl')
 	def test_init_nonexistent_core(self):
-		self.assertRaises(solrlib.SOLRResponseError, solrlib.SOLRCore, ('this_core_does_not_exist',))
+		self.assertRaises(solrcl.SOLRResponseError, solrcl.SOLRCore, ('this_core_does_not_exist',))
 	def test_ping(self):
 		self.solr.ping()
 	def test_info(self):
@@ -125,7 +125,7 @@ class TestSolrlibReadConfig(TestSolrlibBase):
 class TestSolrlibWithDocs(TestSolrlibBase):
 	def setUp(self):
 		super(TestSolrlibWithDocs, self).setUp()
-		self.solr = solrlib.SOLRCore('test_solrlib')
+		self.solr = solrcl.SOLRCore('test_solrcl')
 		#Load some documents
 		docs = (
 			'<doc><field name="id">A</field><field name="testdate">2014-01-31T17:20:00Z</field><field name="testint">1</field><field name="testmulti">A1</field><field name="testmulti">A2</field></doc>',
@@ -153,7 +153,7 @@ class TestSolrlibSelect(TestSolrlibWithDocs):
 		self.assertEqual(res['response']['docs'], [{u'testint': 1, u'id': u'A'}, {u'testint': 1, u'id': u'B'}, {u'testint': 1, u'id': u'C'}])
 
 	def test_select_wrongquery(self):
-		self.assertRaises(solrlib.SOLRResponseError, self.solr.select, {'q': 'thisfielddoesnotexist:x'})
+		self.assertRaises(solrcl.SOLRResponseError, self.solr.select, {'q': 'thisfielddoesnotexist:x'})
 
 	def test_selectAllIter(self):
 		expected_out = dict([((unicode(x),), True) for x in range(0,100000)])
@@ -253,18 +253,18 @@ class TestSolrlibReplication(TestSolrlibWithDocs):
 	def setUp(self):
 		super(TestSolrlibReplication, self).setUp()
 		try:
-			solrlib.SOLRCore('test_solrlib_repl')
+			solrcl.SOLRCore('test_solrcl_repl')
 		except:
-			solrlib.initSlaveSolrCore('test_solrlib_repl', '/scsi2/solr/test_solrlib_repl', 'test_solrlib')
+			solrcl.initSlaveSolrCore('test_solrcl_repl', '/scsi2/solr/test_solrcl_repl', 'test_solrcl')
 
-		self.solr_repl = solrlib.SOLRCore('test_solrlib_repl')
+		self.solr_repl = solrcl.SOLRCore('test_solrcl_repl')
 
 	def tearDown(self):
-		solrlib.freeCore('test_solrlib_repl')
+		solrcl.freeCore('test_solrcl_repl')
 		super(TestSolrlibReplication, self).tearDown()
 
 	def test_startAndWaitReplication(self):
-		self.solr_repl.startAndWaitReplication(masterUrl='http://localhost:8983/solr/test_solrlib')
+		self.solr_repl.startAndWaitReplication(masterUrl='http://localhost:8983/solr/test_solrcl')
 
 	def test_getIndexVersion(self):
 		(iv, rv, rg) = self.solr_repl.getIndexVersion()
@@ -273,7 +273,7 @@ class TestSolrlibReplication(TestSolrlibWithDocs):
 class TestSolrlibWithDocsBlockjoin(TestSolrlibBase):
 	def setUp(self):
 		super(TestSolrlibWithDocsBlockjoin, self).setUp()
-		self.solr = solrlib.SOLRCore('test_solrlib', blockjoin_condition="_is_parent:true")
+		self.solr = solrcl.SOLRCore('test_solrcl', blockjoin_condition="_is_parent:true")
 		#Load some documents
 		docs = (
 			'<doc><field name="id">A</field><field name="testdate">2014-01-31T17:20:00Z</field><field name="testint">1</field><field name="testmulti">A1</field><field name="testmulti">A2</field><field name="_is_parent">true</field><doc><field name="id">A.1</field><field name="testmulti">blabla</field><field name="_is_parent">false</field></doc></doc>',
@@ -305,19 +305,19 @@ class TestSolrlibWithDocsBlockjoin(TestSolrlibBase):
 
 	def test_getDoc(self):
 		#blockjoin document
-		checkdoc = solrlib.SOLRDocument(u"A", self.solr)
+		checkdoc = solrcl.SOLRDocument(u"A", self.solr)
 		checkdoc.setField("testdate", datetime.datetime(2014, 1, 31, 17, 20, 0))
 		checkdoc.setField("testint", 1)
 		checkdoc.setField("testmulti", [u"A1", u"A2"])
 		checkdoc.setField("_is_parent", True)
-		childdoc = solrlib.SOLRDocument(u"A.1", self.solr)
+		childdoc = solrcl.SOLRDocument(u"A.1", self.solr)
 		childdoc.setField("testmulti", u"blabla")
 		childdoc.setField("_is_parent", False)
 		checkdoc.addChild(childdoc)
 		self.assertEqual(checkdoc, self.solr.getDoc("A"))
 
 		#non blockjoin document
-		checkdoc = solrlib.SOLRDocument(u"C", self.solr)
+		checkdoc = solrcl.SOLRDocument(u"C", self.solr)
 		checkdoc.setField("testdate", datetime.datetime(2014, 1, 31, 17, 20, 0))
 		checkdoc.setField("testint", 1)
 		checkdoc.setField("testmulti", [u"B1", u"B2"])
@@ -325,7 +325,7 @@ class TestSolrlibWithDocsBlockjoin(TestSolrlibBase):
 		self.assertEqual(checkdoc, self.solr.getDoc("C"))
 
 		#get internal fields also
-		checkdoc = solrlib.SOLRDocument(u"A", self.solr)
+		checkdoc = solrcl.SOLRDocument(u"A", self.solr)
 		checkdoc.setField("testdate", datetime.datetime(2014, 1, 31, 17, 20, 0))
 		checkdoc.setField("testint", 1)
 		checkdoc.setField("testmulti", [u"A1", u"A2"])
@@ -337,7 +337,7 @@ class TestSolrlibWithDocsBlockjoin(TestSolrlibBase):
 			pass
 		checkdoc.setField("_root_", root)
 		
-		childdoc = solrlib.SOLRDocument(u"A.1", self.solr)
+		childdoc = solrcl.SOLRDocument(u"A.1", self.solr)
 		childdoc.setField("testmulti", u"blabla")
 		childdoc.setField("_is_parent", False)
 		for (root,) in self.solr.selectAllIter("id:A.1", fields=('_root_',)):
@@ -347,15 +347,15 @@ class TestSolrlibWithDocsBlockjoin(TestSolrlibBase):
 
 		self.assertEqual(checkdoc, self.solr.getDoc("A", include_reserved_fields=('_version_', '_root_')))
 
-		self.assertRaises(solrlib.DocumentNotFound, self.solr.getDoc, "nonexistingid")
+		self.assertRaises(solrcl.DocumentNotFound, self.solr.getDoc, "nonexistingid")
 
 
 class TestSolrlibLoadDocs(TestSolrlibBase):
 	def setUp(self):
 		super(TestSolrlibLoadDocs, self).setUp()
-		self.solr = solrlib.SOLRCore('test_solrlib', blockjoin_condition="_is_parent:true")
+		self.solr = solrcl.SOLRCore('test_solrcl', blockjoin_condition="_is_parent:true")
 		#Create a few SOLRDocuments to use in test cases
-		doc = solrlib.SOLRDocument(u"A", self.solr)
+		doc = solrcl.SOLRDocument(u"A", self.solr)
 		doc.setField("testdate", datetime.datetime(2015, 6, 11, 10, 00, 0))
 		doc.setField("testint", 1)
 		doc.setField("testmulti", [u"A1", u"A2"])
@@ -363,12 +363,12 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 		self.DOC_NOBLOCKJOIN = doc
 
 
-		doc = solrlib.SOLRDocument(u"B", self.solr)
+		doc = solrcl.SOLRDocument(u"B", self.solr)
 		doc.setField("testdate", datetime.datetime(2015, 6, 11, 10, 00, 0))
 		doc.setField("testint", 2)
 		doc.setField("testmulti", [u"B1", u"B2"])
 		doc.setField("_is_parent", True)
-		childdoc = solrlib.SOLRDocument(u"B.1", self.solr)
+		childdoc = solrcl.SOLRDocument(u"B.1", self.solr)
 		childdoc.setField("testmulti", u"B.1.1")
 		doc.addChild(childdoc)
 		self.DOC_BLOCKJOIN = doc
@@ -376,14 +376,16 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_loadDocs_base(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
+		self.solr.clearCache()
 		self.assertEqual(self.DOC_NOBLOCKJOIN, self.solr.getDoc("A"))
 		self.assertEqual(self.DOC_BLOCKJOIN, self.solr.getDoc("B"))
 
 	def test_update_noblockjoin(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN,))
 		self.solr.commit()
+		self.solr.clearCache()
 
-		docupdate = solrlib.SOLRDocument(u"A", self.solr)
+		docupdate = solrcl.SOLRDocument(u"A", self.solr)
 		docupdate.setField("testint", 2)
 
 		self.solr.loadDocs((docupdate,))
@@ -397,8 +399,9 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_update_blockjoin(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
+		self.solr.clearCache()
 
-		docupdate = solrlib.SOLRDocument(u"B", self.solr)
+		docupdate = solrcl.SOLRDocument(u"B", self.solr)
 		docupdate.setField("testint", 4)
 
 		self.solr.loadDocs((docupdate,))
@@ -408,17 +411,20 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 		checkdoc._child_docs = []
 		checkdoc.setField("testint", 4)
 
+		print self.solr.getDoc("B").toXML()
+		print checkdoc.toXML()
 		self.assertEqual(checkdoc, self.solr.getDoc("B"))
 
 	def test_update_blockjoin_merge_child_docs(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
+		self.solr.clearCache()
 
-		docupdate = solrlib.SOLRDocument(u"B", self.solr)
+		docupdate = solrcl.SOLRDocument(u"B", self.solr)
 		docupdate.setField("testint", 4)
-		newchild = solrlib.SOLRDocument(u"B.2", self.solr)
+		newchild = solrcl.SOLRDocument(u"B.2", self.solr)
 		docupdate.addChild(newchild)
-		updatedchild = solrlib.SOLRDocument(u"B.1", self.solr)
+		updatedchild = solrcl.SOLRDocument(u"B.1", self.solr)
 		updatedchild.setField("testmulti", u"updated")
 		docupdate.addChild(updatedchild)
 
@@ -435,6 +441,7 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_update_optimistic_concurrence_different_version(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
+		self.solr.clearCache()
 
 		docupdate1 = self.solr.getDoc("B", include_reserved_fields='_version_')
 		docupdate1.setField("testint", 4)
@@ -451,11 +458,12 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 			docupdate1.removeField('_version_')
 			self.assertEqual(docupdate1, self.solr.getDoc("B"))
 			self.assertEqual(len(w), 1)
-			self.assertEqual(w[0].category, solrlib.SOLRDocumentWarning)
+			self.assertEqual(w[0].category, solrcl.SOLRDocumentWarning)
 
 	def test_update_optimistic_concurrence_new_document(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
+		self.solr.clearCache()
 
 		docupdate = self.DOC_BLOCKJOIN.clone()
 		#This is to force that the document should be loaded only if is new (and it is not true)
@@ -469,29 +477,30 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 			self.assertEqual(self.DOC_BLOCKJOIN, self.solr.getDoc("B"))
 			#A warning is raised
 			self.assertEqual(len(w), 1)
-			self.assertEqual(w[0].category, solrlib.SOLRDocumentWarning)
+			self.assertEqual(w[0].category, solrcl.SOLRDocumentWarning)
 
 	def test_update_optimistic_concurrence_existing_document(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
+		self.solr.clearCache()
 
-		docupdate = solrlib.SOLRDocument(u"C", self.solr)
+		docupdate = solrcl.SOLRDocument(u"C", self.solr)
 		docupdate.setField('_version_', 1)
-		childdoc = solrlib.SOLRDocument(u"C.1", self.solr)
+		childdoc = solrcl.SOLRDocument(u"C.1", self.solr)
 		docupdate.addChild(childdoc)
 		#If version > 0 document must exists
 		with warnings.catch_warnings(record=True) as w:
 			self.solr.loadDocs((docupdate,))
 			self.solr.commit()
 			#Checks that document has not been created
-			self.assertRaises(solrlib.DocumentNotFound, self.solr.getDoc, "C")
+			self.assertRaises(solrcl.DocumentNotFound, self.solr.getDoc, "C")
 			self.assertEqual(len(w), 1)
-			self.assertEqual(w[0].category, solrlib.SOLRDocumentWarning)
+			self.assertEqual(w[0].category, solrcl.SOLRDocumentWarning)
 		
 
 if __name__ == '__main__':
-	solrlib_logger = logging.getLogger("solrlib")
+	solrcl_logger = logging.getLogger("solrcl")
 	handler=logging.StreamHandler()
 	handler.setLevel(logging.INFO)
-	solrlib_logger.addHandler(handler)
+	solrcl_logger.addHandler(handler)
 	unittest.main()
