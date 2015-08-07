@@ -387,7 +387,7 @@ sort parameter to pass to SOLR"""
         """Load documents from docs iterator. docs should iterate over SOLRDocument instances. This function transparently manages blockjoin updates. merge_child_docs=False replace child docs in core with child_docs in docs. merge_child_docs=True update child documents also, based in id field"""
         def gen():
             for newdoc in docs:
-                if newdoc.hasChildDocs() or self.isBlockJoinParentDoc(newdoc.id):
+                if newdoc.hasChildDocs() or self.isBlockJoinParentDoc(newdoc.id, prefetch=True):
                     #Merge provided doc with solr doc to simulate update
                     newversion = newdoc.getFieldDefault('_version_', 0)
                     try:
@@ -423,7 +423,7 @@ sort parameter to pass to SOLR"""
                     #Can't use update for blockjoin documents: SOLR doesn't load and raises no error.
                     yield doc2load.toXML(update=False)
 
-                elif self.isBlockJoinChildDoc(newdoc.id):
+                elif self.isBlockJoinChildDoc(newdoc.id, prefetch=True):
                     #Not yet supported: skip
                     warnings.warn("Can't update document %s: it is a child blockjoin doc. This use case is not yet supported" % (newdoc.id,), SOLRDocumentWarning)
                     continue
