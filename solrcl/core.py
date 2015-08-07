@@ -59,6 +59,9 @@ class SOLRCore(SOLRBase):
             except SOLRResponseError, e:
                 raise SOLRResponseError("Invalid blockjoin condition: '%s': %s" % (self.blockjoin_condition, e), httpStatus=e.httpStatus)
 
+        #Set caches
+        self.cache = {}
+
         self.logger.debug("Core opened")
 
     def _setLogger(self):
@@ -322,13 +325,14 @@ sort parameter to pass to SOLR"""
     def _isInIterDoc(self, solrid, iterator_f, prefetch=False):
         """If id is in iterator returns True, else False. iterator should accept a solrid optional parameter. If prefetch i true result is cached and prefetched"""
         cache_name = "_" + iterator_f.__name__ + "_ids_cache"
-        if prefetch and not hasattr(self, cache_name):
+        if prefetch and not self.cache.has_key(cache_name):
             self.logger.info("Prefetching cache for %s" % iterator_f.__name__)
-            setattr(self, cache_name, set())
+            self.cache[cache_name] = set()
+            cache = self.cache[cache_name]
             for temp_solrid in iterator_f():
-                getattr(self, cache_name).add(temp_solrid)
+                cache.add(temp_solrid)
         if prefetch:
-            return solrid in getattr(self, cache_name)
+            return solrid in self.cache[cache_name]
         else:
             g = iterator_f(solrid=solrid)
             try:
@@ -338,6 +342,9 @@ sort parameter to pass to SOLR"""
             except StopIteration:
                 #Otherwise it isn't
                 return False
+
+    def clearCache(self):
+        self.cache = {}
 
     def isBlockJoinParentDoc(self, solrid, prefetch=False):
         return self._isInIterDoc(solrid, self.listBlockJoinParentIdsIter, prefetch=prefetch)
