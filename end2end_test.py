@@ -11,8 +11,8 @@ import logging
 TEST_SOLRCONFIG = """<?xml version="1.0" encoding="UTF-8" ?>
 <config>
   <luceneMatchVersion>LUCENE_41</luceneMatchVersion>
-  <lib dir="/opt/solr/dist" regex="solr-cell-.*\.jar"/>
-  <lib dir="/opt/solr/contrib/extraction/lib" regex=".*\.jar"/>
+  <lib dir="${solr.install.dir}/dist" regex="solr-cell-.*\.jar"/>
+  <lib dir="${solr.install.dir}/contrib/extraction/lib" regex=".*\.jar"/>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
   <updateHandler class="solr.DirectUpdateHandler2"><updateLog/></updateHandler>
   <requestHandler name="/select" class="solr.SearchHandler">
@@ -73,7 +73,7 @@ def initTestCore():
 	try:
 		solrcl.SOLRCore('test_solrcl')
 	except:
-		solrcl.initCore('test_solrcl', '/scsi2/solr/test_solrcl', TEST_SOLRCONFIG, TEST_SCHEMA)
+		solrcl.initCore('test_solrcl', '/tmp/test_solrcl', TEST_SOLRCONFIG, TEST_SCHEMA)
 
 
 class TestSolrlibBase(unittest.TestCase):
@@ -255,7 +255,7 @@ class TestSolrlibReplication(TestSolrlibWithDocs):
 		try:
 			solrcl.SOLRCore('test_solrcl_repl')
 		except:
-			solrcl.initSlaveSolrCore('test_solrcl_repl', '/scsi2/solr/test_solrcl_repl', 'test_solrcl')
+			solrcl.initSlaveSolrCore('test_solrcl_repl', '/tmp/test_solrcl_repl', 'test_solrcl')
 
 		self.solr_repl = solrcl.SOLRCore('test_solrcl_repl')
 
