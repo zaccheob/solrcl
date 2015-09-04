@@ -6,6 +6,8 @@ import time
 import multiprocessing
 import multiprocessing.dummy
 import warnings
+import threading
+import Queue
 import logging
     
 from solrcl.base import *
@@ -386,11 +388,28 @@ sort parameter to pass to SOLR"""
 
         return self.update(data=gen(), dataMIMEType="text/xml; charset=utf-8")
 
+    def _loadXMLDocsFromQueue(self, q, stop):
+	def gen():
+                #After 5 seconds of inactivity sends however a \n
+                #to keep the connection connection alive.
+                #Each object in the query is a string <doc>...</doc>
+                #therefore there is no data corruption (\n are ignored)
+                #stop is an Event signal
+		while not stop.is_set():
+			try:
+				xmldoc = q.get(True, 5)
+				yield xmldoc
+                        	q.task_done()
+			except Queue.Empty:
+				yield "\n"
+
+	return self._loadXMLDocs(gen())
+
     def loadEmptyDocs(self, ids):
         """Loads empty docs with id from ids iterator"""
         return self._loadXMLDocs('<doc><field name="{0}" null="false">{1}</field></doc>'.format(self.id_field, solr_id) for solr_id in ids)
 
-    def loadDocs(self, docs, merge_child_docs=False):
+    def loadDocs(self, docs, merge_child_docs=False, parallel=1):
         """Load documents from docs iterator. docs should iterate over SOLRDocument instances. This function transparently manages blockjoin updates. merge_child_docs=False replace child docs in core with child_docs in docs. merge_child_docs=True update child documents also, based in id field"""
         def gen():
             for newdoc in docs:
@@ -438,8 +457,35 @@ sort parameter to pass to SOLR"""
                     doc2load = newdoc
                     yield doc2load.toXML()
 
+	#A FIFO Queue
+        q = Queue.Queue()
 
-        return self._loadXMLDocs(gen())
+	#A signal Event for stopping running threads
+	stop = threading.Event()
+
+	#Starts threads
+	threads = []
+        for _ in range(0,parallel):
+		t = threading.Thread(target=self._loadXMLDocsFromQueue, args=(q, stop))
+                t.start()
+		threads.append(t)
+		self.logger.debug("Starting thread %s" % t.name)
+	#Fill the queue
+	for d in gen():
+		q.put(d)
+		self.logger.debug("Put document in queue %s" % repr(q))
+		self.logger.debug("%s" % d)
+
+	self.logger.debug("Joining queue")
+	q.join()
+
+	#Sending stop signal to threads
+	stop.set()
+	self.logger.debug("Queue joined")
+	for t in threads:
+		self.logger.debug("Joining thread %s", t.name)
+		t.join()
+
 
     def replicationCommand(self, command, **pars):
         pars['command'] = command
