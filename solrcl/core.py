@@ -470,22 +470,23 @@ sort parameter to pass to SOLR"""
                 t.start()
 		threads.append(t)
 		self.logger.debug("Starting thread %s" % t.name)
-	#Fill the queue
-	for d in gen():
-		q.put(d)
-		self.logger.debug("Put document in queue %s" % repr(q))
-		self.logger.debug("%s" % d)
+	try:
+		#Fill the queue
+		for d in gen():
+			q.put(d)
+			self.logger.debug("Put document in queue %s" % repr(q))
+			self.logger.debug("%s" % d)
 
-	self.logger.debug("Joining queue")
-	q.join()
+	finally:
+		self.logger.debug("Joining queue")
+		q.join()
 
-	#Sending stop signal to threads
-	stop.set()
-	self.logger.debug("Queue joined")
-	for t in threads:
-		self.logger.debug("Joining thread %s", t.name)
-		t.join()
-
+		#Sending stop signal to threads
+		stop.set()
+		self.logger.debug("Queue joined")
+		for t in threads:
+			self.logger.debug("Joining thread %s", t.name)
+			t.join()
 
     def replicationCommand(self, command, **pars):
         pars['command'] = command

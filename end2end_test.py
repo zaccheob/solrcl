@@ -373,6 +373,18 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 		doc.addChild(childdoc)
 		self.DOC_BLOCKJOIN = doc
 
+	def test_loadDocs_empty(self):
+		self.solr.loadDocs(())
+
+	def test_loadDocs_error(self):
+		def mygen():
+			if True:
+				raise ValueError
+			else:
+				yield None
+
+		self.assertRaises(ValueError, self.solr.loadDocs, mygen())
+
 	def test_loadDocs_base(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
