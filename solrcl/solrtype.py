@@ -1,10 +1,12 @@
 # -*- coding: utf8 -*-
 """Classes representing SOLR types"""
 
+import re
 import datetime
 import warnings
 
 #Constants
+
 SOLR_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
 
@@ -22,9 +24,28 @@ Utility function to convert SOLR datetime string representation into a datetime 
     """
     return datetime.datetime.strptime(s, SOLR_DATETIME_FORMAT)
 
+#This function supporting datetime formatting for dates prior to 1-1-1900 comes from
+#http://stackoverflow.com/questions/1526170/formatting-date-string-in-python-for-dates-prior-to-1900
+
+ANCIENT_FMT_DICT = {
+    '%Y': '{0.year}',
+    '%m': '{0.month:02}',
+    '%d': '{0.day:02}',
+    '%H': '{0.hour:02}',
+    '%M': '{0.minute:02}',
+    '%S': '{0.second:02}'}
+
+def ancient_fmt(ts, fmt):
+    fmt = fmt.replace('%%', '%')
+    fmt = re.sub('(%\w)', r'{\1}', fmt)
+    return fmt.format(**ANCIENT_FMT_DICT).format(ts)
+
 def datetime2solr(d):
     try:
-        return unicode(d.strftime(SOLR_DATETIME_FORMAT))
+        if d.year < 1900:
+            return unicode(ancient_fmt(d, SOLR_DATETIME_FORMAT))
+        else:
+            return unicode(d.strftime(SOLR_DATETIME_FORMAT))
     except AttributeError, e:
         raise ValueError, "Not a datetime compatible object: %s" % repr(d)
 

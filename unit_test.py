@@ -523,6 +523,7 @@ class TestSOLRTypeMethods(unittest.TestCase):
 
 	def test_check_TrieDateField(self):
 		self.t._check_TrieDateField(datetime.datetime.now())
+		self.t._check_TrieDateField(datetime.datetime(1850, 1, 1))
 		self.assertRaises(AssertionError, self.t._check_TrieDateField, 'a')
 
 	def test_check_TrieIntField(self):
@@ -551,6 +552,7 @@ class TestSOLRTypeMethods(unittest.TestCase):
 
 	def test_serialize_TrieDateField(self):
 		self.assertEqual(self.t._serialize_TrieDateField(datetime.datetime(1975, 3, 4, 3, 15, 23)), '1975-03-04T03:15:23Z')
+		self.assertEqual(self.t._serialize_TrieDateField(datetime.datetime(1850, 1, 1, 14, 35, 0)), '1850-01-01T14:35:00Z')
 
 	def test_serialize_TrieIntField(self):
 		self.assertEqual(self.t._serialize_TrieIntField(123), '123')
@@ -573,6 +575,7 @@ class TestSOLRTypeMethods(unittest.TestCase):
 
 	def test_deserialize_TrieDateField(self):
 		self.assertEqual(self.t._deserialize_TrieDateField(u'1975-03-04T03:15:23Z'), datetime.datetime(1975, 3, 4, 3, 15, 23))
+		self.assertEqual(self.t._deserialize_TrieDateField(u'1850-01-01T14:35:00Z'), datetime.datetime(1850, 1, 1, 14, 35, 0))
 
 	def test_deserialize_TrieIntField(self):
 		self.assertEqual(self.t._deserialize_TrieIntField(u'123'), 123)
