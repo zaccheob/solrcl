@@ -160,7 +160,9 @@ class SOLRType(object):
     def _deserialize_BoolField(value):
         #In this way if value is already a boolean it works.
         #This is the same behaviour as int() float()...
-        return {u'true': True, u'false': False, True: True, False: False}[value.lower()]
+        if isinstance(value, unicode):
+            value = value.lower()
+        return {u'true': True, u'false': False, True: True, False: False}[value]
 
     @staticmethod
     def _deserialize_TextField(value):

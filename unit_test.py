@@ -568,7 +568,7 @@ class TestSOLRTypeMethods(unittest.TestCase):
 		self.assertEqual(self.t._deserialize_BoolField(u'false'), False)
 		self.assertEqual(self.t._deserialize_BoolField(u'False'), False)
 		self.assertEqual(self.t._deserialize_BoolField(u'FaLsE'), False)
-
+		self.assertEqual(self.t._deserialize_BoolField(True), True)
 
 	def test_deserialize_TextField(self):
 		self.assertEqual(self.t._deserialize_TextField(u'aà€'), u'aà€')
