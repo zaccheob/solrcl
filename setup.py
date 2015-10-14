@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
 	name='SolrCL',
 	packages = find_packages(),
-        version='0.1.3',
+        version='0.1.4',
         description='SOLR connection library',
         author='Zaccheo Bagnati',
         author_email='zaccheob@gmail.com',
