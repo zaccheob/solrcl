@@ -4,6 +4,10 @@
 import re
 import datetime
 import warnings
+import logging
+
+logger = logging.getLogger("solrcl")
+logger.setLevel(logging.DEBUG)
 
 #Constants
 
@@ -160,9 +164,13 @@ class SOLRType(object):
     def _deserialize_BoolField(value):
         #In this way if value is already a boolean it works.
         #This is the same behaviour as int() float()...
+        logger.debug("deserializing %s" % repr(value))
         if isinstance(value, unicode):
             value = value.lower()
-        return {u'true': True, u'false': False, True: True, False: False}[value]
+        try:
+            return{u'true': True, u'false': False, True: True, False: False}[value]
+        except KeyError:
+            raise ValueError("Invalid value %s for boolean" % repr(value))
 
     @staticmethod
     def _deserialize_TextField(value):

@@ -28,6 +28,13 @@ class TestSolrlibSOLRDocumentBase(unittest.TestCase):
         solrtype.serialize.side_effect = lambda x: x
         solrtype.deserialize.side_effect = lambda x: x
 
+        solrwrongtype = mock.Mock(spec=solrcl.SOLRType)
+        solrwrongtype.name = 'testwrongtype'
+        solrwrongtype.check = mock.Mock()
+        solrwrongtype.check.return_value = True
+        solrwrongtype.serialize.side_effect = lambda x: x
+        solrwrongtype.deserialize.side_effect = ValueError("Wrong value!")
+
         solrfield = mock.Mock(spec=solrcl.SOLRField)
         solrfield.name = 'myidfield'
         solrfield.type = solrtype
@@ -47,6 +54,12 @@ class TestSolrlibSOLRDocumentBase(unittest.TestCase):
         solrfield.type = solrtype
         solrfield.multi = True
         solr.fields['testfieldmulti'] = solrfield
+
+        solrfield = mock.Mock(spec=solrcl.SOLRField)
+        solrfield.name = 'testfieldwrong'
+        solrfield.type = solrwrongtype
+        solrfield.multi = False
+        solr.fields['testfieldwrong'] = solrfield
 
         solr.id_field = 'myidfield'
 
@@ -432,6 +445,16 @@ class TestSolrlibSOLRDocumentFactory(TestSolrlibSOLRDocumentBase):
             self.assertEqual(len(w), 1)
             self.assertEqual(w[0].category, solrcl.SOLRDocumentWarning)
 
+    def test_fromXML_invalidFieldValue(self):
+        XML = '<add><doc><field name="myidfield">1</field><field name="testfieldwrong">WRONG</field></doc></add>'
+        fh = StringIO.StringIO(XML)
+        iterdocs = self.df.fromXML(fh)
+        with warnings.catch_warnings(record=True) as w:
+            self.assertEqual(len(list(iterdocs)), 0)
+            warnings.simplefilter('always')
+            self.assertEqual(len(w), 1)
+            self.assertEqual(w[0].category, solrcl.SOLRDocumentWarning)
+
     def test_fromXML_invalidTag(self):
         XML = '<add><doc><field name="myidfield">1</field><invalidtag>aaa</invalidtag></doc></add>'
         fh = StringIO.StringIO(XML)
@@ -582,6 +605,7 @@ class TestSOLRTypeMethods(unittest.TestCase):
         self.assertEqual(self.t._deserialize_BoolField(u'False'), False)
         self.assertEqual(self.t._deserialize_BoolField(u'FaLsE'), False)
         self.assertEqual(self.t._deserialize_BoolField(True), True)
+        self.assertRaises(ValueError, self.t._deserialize_BoolField, "nonvalid")
 
     def test_deserialize_TextField(self):
         self.assertEqual(self.t._deserialize_TextField(u'aà€'), u'aà€')
@@ -592,15 +616,19 @@ class TestSOLRTypeMethods(unittest.TestCase):
     def test_deserialize_TrieDateField(self):
         self.assertEqual(self.t._deserialize_TrieDateField(u'1975-03-04T03:15:23Z'), datetime.datetime(1975, 3, 4, 3, 15, 23))
         self.assertEqual(self.t._deserialize_TrieDateField(u'1850-01-01T14:35:00Z'), datetime.datetime(1850, 1, 1, 14, 35, 0))
+        self.assertRaises(ValueError, self.t._deserialize_TrieDateField, "nonvalid")
 
     def test_deserialize_TrieIntField(self):
         self.assertEqual(self.t._deserialize_TrieIntField(u'123'), 123)
+        self.assertRaises(ValueError, self.t._deserialize_TrieIntField, "nonvalid")
 
     def test_deserialize_TrieLongField(self):
         self.assertEqual(self.t._deserialize_TrieLongField(u'1234567890123456'), 1234567890123456)
+        self.assertRaises(ValueError, self.t._deserialize_TrieLongField, "nonvalid")
 
     def test_deserialize_TrieFloatField(self):
         self.assertEqual(self.t._deserialize_TrieFloatField(u'1.2345'), 1.2345)
+        self.assertRaises(ValueError, self.t._deserialize_TrieFloatField, "nonvalid")
 
 
 

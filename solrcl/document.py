@@ -185,10 +185,13 @@ class SOLRDocumentFactory(object):
                     # Note that when there is no text field.text returns None, not ''
                     # Let's transform it in '' because Nulls are already managed separately
                     value = u'' if value is None else value
-                    if fieldname == self.solr.id_field:
-                        doc.setField(fieldname, self.solr.fields[fieldname].type.deserialize(unicode(value)))
-                    else:
-                        doc.appendFieldValue(fieldname, self.solr.fields[fieldname].type.deserialize(unicode(value)))
+                    try:
+                        if fieldname == self.solr.id_field:
+                            doc.setField(fieldname, self.solr.fields[fieldname].type.deserialize(unicode(value)))
+                        else:
+                            doc.appendFieldValue(fieldname, self.solr.fields[fieldname].type.deserialize(unicode(value)))
+                    except ValueError as e:
+                        raise SOLRDocumentError("%s" % e)
 
             elif field.tag == 'doc':
                 doc.addChild(self._fromXMLDoc(field))
