@@ -68,9 +68,9 @@ Base class providing SOLR connection and a method :attr:`.request` for making ht
 				raise SOLRResponseError, "Unsupported response content type {0}".format(r.headers.get('content-type'))
 
 		except requests.ConnectionError, err:
-			raise SOLRNetworkError("{0}".format(err))
+			raise SOLRNetworkError("{0} requesting {1}".format(err, resource))
 		except requests.RequestException, err:
-			raise SOLRResponseError("HTTP request error: {0}".format(err), httpStatus=r.status_code)
+			raise SOLRResponseError("HTTP request error: {0} requesting {1}".format(err, resource), httpStatus=r.status_code)
 			
 		try:
 			if response.has_key('responseHeader') and response['responseHeader']['status'] == 0:
