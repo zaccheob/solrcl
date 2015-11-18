@@ -388,14 +388,12 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_loadDocs_base(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
-		self.solr.clearCache()
 		self.assertEqual(self.DOC_NOBLOCKJOIN, self.solr.getDoc("A"))
 		self.assertEqual(self.DOC_BLOCKJOIN, self.solr.getDoc("B"))
 
 	def test_update_noblockjoin(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN,))
 		self.solr.commit()
-		self.solr.clearCache()
 
 		docupdate = solrcl.SOLRDocument(u"A", self.solr)
 		docupdate.setField("testint", 2)
@@ -411,7 +409,6 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_update_blockjoin(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
-		self.solr.clearCache()
 
 		docupdate = solrcl.SOLRDocument(u"B", self.solr)
 		docupdate.setField("testint", 4)
@@ -430,7 +427,6 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_update_blockjoin_merge_child_docs(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
-		self.solr.clearCache()
 
 		docupdate = solrcl.SOLRDocument(u"B", self.solr)
 		docupdate.setField("testint", 4)
@@ -453,7 +449,6 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_update_optimistic_concurrence_different_version(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
-		self.solr.clearCache()
 
 		docupdate1 = self.solr.getDoc("B", include_reserved_fields='_version_')
 		docupdate1.setField("testint", 4)
@@ -475,7 +470,6 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_update_optimistic_concurrence_new_document(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
-		self.solr.clearCache()
 
 		docupdate = self.DOC_BLOCKJOIN.clone()
 		#This is to force that the document should be loaded only if is new (and it is not true)
@@ -494,7 +488,6 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 	def test_update_optimistic_concurrence_existing_document(self):
 		self.solr.loadDocs((self.DOC_NOBLOCKJOIN, self.DOC_BLOCKJOIN))
 		self.solr.commit()
-		self.solr.clearCache()
 
 		docupdate = solrcl.SOLRDocument(u"C", self.solr)
 		docupdate.setField('_version_', 1)
@@ -508,7 +501,7 @@ class TestSolrlibLoadDocs(TestSolrlibBase):
 			self.assertRaises(solrcl.DocumentNotFound, self.solr.getDoc, "C")
 			self.assertEqual(len(w), 1)
 			self.assertEqual(w[0].category, solrcl.SOLRDocumentWarning)
-		
+
 
 if __name__ == '__main__':
 	solrcl_logger = logging.getLogger("solrcl")

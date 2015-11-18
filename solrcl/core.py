@@ -488,6 +488,9 @@ sort parameter to pass to SOLR"""
 			self.logger.debug("Joining thread %s", t.name)
 			t.join()
 
+        # invalidaate cache because documents have changed
+        self.clearCache()
+
     def replicationCommand(self, command, **pars):
         pars['command'] = command
         return self.request('replication', parameters=pars)
