@@ -54,23 +54,24 @@ Base class providing SOLR connection and a method :attr:`.request` for making ht
 		try:
 			#This makes the request
 			r = req_method(resource, params=parameters, headers=headers, data=data)
+			try:
+				#Only json supported for now...
+				if r.headers.get('content-type') in ('application/json; charset=UTF-8', 'application/json'):
+					try:
+						response = r.json()
+					except ValueError, err:
+						raise SOLRResponseError, "Error in parsing json: {0}".format(err)
+				else:
+					#Not 200 HTTP code raise exception
+					#Note that exception is raised only if response is not json. Error responses that return correct json are managed after
+					r.raise_for_status()
+					raise SOLRResponseError, "Unsupported response content type {0}".format(r.headers.get('content-type'))
+			except requests.HTTPError, err:
+				raise SOLRResponseError("HTTP request error: {0} requesting {1}".format(err, resource), httpStatus=r.status_code)
 
-			#Only json supported for now...
-			if r.headers.get('content-type') in ('application/json; charset=UTF-8', 'application/json'):
-				try:
-					response = r.json()
-				except ValueError, err:
-					raise SOLRResponseError, "Error in parsing json: {0}".format(err)
-			else:
-				#Not 200 HTTP code raise exception
-				#Note that exception is raised only if response is not json. Error responses that return correct json are managed after
-				r.raise_for_status()
-				raise SOLRResponseError, "Unsupported response content type {0}".format(r.headers.get('content-type'))
-
-		except requests.ConnectionError, err:
-			raise SOLRNetworkError("{0} requesting {1}".format(err, resource))
 		except requests.RequestException, err:
-			raise SOLRResponseError("HTTP request error: {0} requesting {1}".format(err, resource), httpStatus=r.status_code)
+			raise SOLRNetworkError("{0} requesting {1}".format(err, resource))
+
 			
 		try:
 			if response.has_key('responseHeader') and response['responseHeader']['status'] == 0:
