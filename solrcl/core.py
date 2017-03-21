@@ -5,6 +5,8 @@ import datetime
 import time
 import multiprocessing
 import multiprocessing.dummy
+
+import sys
 import warnings
 import threading
 import Queue
@@ -32,6 +34,10 @@ class DocumentNotFound(exceptions.SOLRError):
 
 class SOLRReplicationError(exceptions.SOLRError):
     """Exception raised for errors in replication calls"""
+    pass
+
+class ThreadError(exceptions.SOLRError):
+    """Exception raised when errors occur in threads"""
     pass
 
 class SOLRCore(SOLRBase):
@@ -118,7 +124,7 @@ class SOLRCore(SOLRBase):
             raise SOLRResponseFormatError, "Wrong response format: %s %s - %s" % (KeyError, e, data)
 
     def request(self, resource, parameters={}, data=None, dataMIMEType=None):
-	"""Wraps base request method adding corename to relative requests.
+        """Wraps base request method adding corename to relative requests.
 absolute requests are left as they are"""
         #Absolute path left "as is"
         if resource.startswith('/'):
@@ -388,22 +394,26 @@ sort parameter to pass to SOLR"""
 
         return self.update(data=gen(), dataMIMEType="text/xml; charset=utf-8")
 
-    def _loadXMLDocsFromQueue(self, q, stop):
-	def gen():
-                #After 5 seconds of inactivity sends however a \n
-                #to keep the connection connection alive.
-                #Each object in the query is a string <doc>...</doc>
-                #therefore there is no data corruption (\n are ignored)
-                #stop is an Event signal
-		while not stop.is_set():
-			try:
-				xmldoc = q.get(True, 5)
-				yield xmldoc
-                        	q.task_done()
-			except Queue.Empty:
-				yield "\n"
+    def _loadXMLDocsFromQueue(self, q, stop, errors_q):
+        def gen():
+            #After 5 seconds of inactivity sends however a \n
+            #to keep the connection connection alive.
+            #Each object in the query is a string <doc>...</doc>
+            #therefore there is no data corruption (\n are ignored)
+            #stop is an Event signal
+            while not stop.is_set():
+                try:
+                    xmldoc = q.get(True, 5)
+                    yield xmldoc
+                    q.task_done()
+                except Queue.Empty:
+                    yield "\n"
 
-	return self._loadXMLDocs(gen())
+        try:
+            return self._loadXMLDocs(gen())
+        except Exception:
+            errors_q.put(sys.exc_info())
+            raise
 
     def loadEmptyDocs(self, ids):
         """Loads empty docs with id from ids iterator"""
@@ -457,38 +467,61 @@ sort parameter to pass to SOLR"""
                     doc2load = newdoc
                     yield doc2load.toXML()
 
-	#A FIFO Queue
+        #A FIFO Queue to send docs
         q = Queue.Queue()
 
-	#A signal Event for stopping running threads
-	stop = threading.Event()
+        # A FIFO Queue to return errors
+        errors_q = Queue.Queue()
 
-	#Starts threads
-	threads = []
+        #A signal Event for stopping running threads
+        stop = threading.Event()
+
+        # List of exceptions occurred in threads:
+        exceptions_in_threads = []
+
+        #Starts threads
+        threads = []
         for _ in range(0,parallel):
-		t = threading.Thread(target=self._loadXMLDocsFromQueue, args=(q, stop))
-                t.start()
-		threads.append(t)
-		self.logger.debug("Starting thread %s" % t.name)
-	try:
-		#Fill the queue
-		for d in gen():
-			q.put(d)
-			self.logger.debug("Put document in queue %s" % repr(q))
-			self.logger.debug("%s" % d)
+            t = threading.Thread(target=self._loadXMLDocsFromQueue, args=(q, stop, errors_q))
+            t.start()
+            threads.append(t)
+            self.logger.debug("Starting thread %s" % t.name)
+        try:
+            #Fill the queue
+            for d in gen():
+                q.put(d)
+                self.logger.debug("Put document in queue %s" % repr(q))
+                self.logger.debug("%s" % d)
 
-	finally:
-		self.logger.debug("Joining queue")
-		q.join()
+        finally:
+            self.logger.debug("Joining documents queue")
+            q.join()
+            self.logger.debug("Queue joined")
 
-		#Sending stop signal to threads
-		stop.set()
-		self.logger.debug("Queue joined")
-		for t in threads:
-			self.logger.debug("Joining thread %s", t.name)
-			t.join()
+            #Sending stop signal to threads
+            stop.set()
+            for t in threads:
+                self.logger.debug("Joining thread %s", t.name)
+                t.join()
 
-        # invalidaate cache because documents have changed
+        # If any error occurred in threads raise an exception:
+        # Check errors in threads
+
+        try:
+            while True:
+                exceptions_in_threads.append(errors_q.get(block=False))
+                errors_q.task_done()
+        except Queue.Empty:
+            pass
+
+        self.logger.debug("Joining errors queue")
+        errors_q.join()
+        self.logger.debug("Queue joined")
+
+        if len(exceptions_in_threads) > 0:
+            raise ThreadError("An error occurred in one or more threads: %s" % (", ".join(["%s: %s" % (x[0], x[1]) for x in exceptions_in_threads]),))
+
+        # invalidate cache because documents have changed
         self.clearCache()
 
     def replicationCommand(self, command, **pars):
