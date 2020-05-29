@@ -89,7 +89,7 @@ def initCore(core, instance_dir, solrconfig, schema, domain=DEFAULT_SOLR_DOMAIN,
 
 
 def freeCore(core, domain=DEFAULT_SOLR_DOMAIN, port=DEFAULT_SOLR_PORT, ssh_user=None):
-	sa = admin.SOLRAdmin(domain=domain)
+	sa = admin.SOLRAdmin(domain=domain, port=port)
 	sa.unload(core, deleteInstanceDir=True)
 
 
