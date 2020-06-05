@@ -567,8 +567,8 @@ sort parameter to pass to SOLR"""
             self.logger.debug("Replication is running")
             time.sleep(5)
 
-        last_replication = datetime.datetime.strptime(response['details']['slave'].get('indexReplicatedAt', 'Fri Jan 01 00:00:00 CEST 1960'), SOLR_REPLICATION_DATETIME_FORMAT)
-        last_replication_failed = datetime.datetime.strptime(response['details']['slave'].get('replicationFailedAt', 'Fri Jan 01 00:00:00 CEST 1960'), SOLR_REPLICATION_DATETIME_FORMAT)
+        last_replication = datetime.datetime.strptime(response['details']['slave'].get('indexReplicatedAt', 'Fri Jan 01 00:00:00 UTC 1960'), SOLR_REPLICATION_DATETIME_FORMAT)
+        last_replication_failed = datetime.datetime.strptime(response['details']['slave'].get('replicationFailedAt', 'Fri Jan 01 00:00:00 UTC 1960'), SOLR_REPLICATION_DATETIME_FORMAT)
         if last_replication == last_replication_failed:
             #Last replication date is also last replication failed date, therefore last replication failed
             self.logger.error("Replication has failed")
